@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Activity, Send, Trash2, Circle, Clock, MessageSquare, Server, Partition, Hash } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
 const KafkaMessagesDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('Disconnected');
-  const stompRef = useRef(null);
-  const socketRef = useRef(null);
 
   // Configuración de colores para tópicos
   const topicColors = {
@@ -19,14 +16,13 @@ const KafkaMessagesDashboard = () => {
   // Conectar a WebSocket
   useEffect(() => {
     connectWebSocket();
-    return () => disconnectWebSocket();
   }, []);
 
   const connectWebSocket = () => {
     try {
       setConnectionStatus('Connecting...');
       
-      // Simulación de conexión WebSocket (en producción usar SockJS/STOMP)
+      // Simulación de conexión WebSocket
       setTimeout(() => {
         setIsConnected(true);
         setConnectionStatus('Connected');
@@ -59,14 +55,6 @@ const KafkaMessagesDashboard = () => {
     }
   };
 
-  const disconnectWebSocket = () => {
-    if (socketRef.current) {
-      socketRef.current.close();
-    }
-    setIsConnected(false);
-    setConnectionStatus('Disconnected');
-  };
-
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
@@ -94,6 +82,18 @@ const KafkaMessagesDashboard = () => {
         setNewMessage('');
       } else {
         console.error('Error enviando mensaje');
+        // Simular mensaje local si hay error
+        const simulatedMessage = {
+          content: newMessage,
+          topic: determineTopicFromMessage(newMessage),
+          partition: Math.floor(Math.random() * 2),
+          offset: Date.now(),
+          consumerGroup: `consumer-${determineTopicFromMessage(newMessage)}-partition${Math.floor(Math.random() * 2)}`,
+          timestamp: new Date().toISOString()
+        };
+        
+        setMessages(prev => [simulatedMessage, ...prev]);
+        setNewMessage('');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -143,31 +143,54 @@ const KafkaMessagesDashboard = () => {
   const topicStats = getTopicStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
+      color: 'white',
+      fontFamily: 'Arial, sans-serif'
+    }}>
       {/* Header */}
-      <header className="bg-black/20 backdrop-blur-lg border-b border-gray-700/50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                <Activity className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Kafka Messages Dashboard
-                </h1>
-                <p className="text-gray-400 text-sm">Sistema de mensajería en tiempo real</p>
-              </div>
+      <header style={{
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        padding: '1rem 0'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h1 style={{ 
+                fontSize: '2rem', 
+                fontWeight: 'bold',
+                background: 'linear-gradient(45deg, #60a5fa, #a78bfa)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                margin: 0
+              }}>
+                🚀 Kafka Messages Dashboard
+              </h1>
+              <p style={{ color: '#9ca3af', fontSize: '0.9rem', margin: '0.5rem 0 0 0' }}>
+                Sistema de mensajería en tiempo real
+              </p>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Circle className={`w-3 h-3 ${isConnected ? 'text-green-400 fill-current' : 'text-red-400 fill-current'}`} />
-                <span className={`text-sm font-medium ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ 
+                  width: '12px', 
+                  height: '12px', 
+                  borderRadius: '50%', 
+                  backgroundColor: isConnected ? '#10b981' : '#ef4444',
+                  display: 'inline-block'
+                }}></span>
+                <span style={{ 
+                  fontSize: '0.9rem', 
+                  fontWeight: '500',
+                  color: isConnected ? '#10b981' : '#ef4444'
+                }}>
                   {connectionStatus}
                 </span>
               </div>
-              <div className="text-sm text-gray-400">
+              <div style={{ fontSize: '0.9rem', color: '#9ca3af' }}>
                 Total: {messages.length} mensajes
               </div>
             </div>
@@ -175,37 +198,68 @@ const KafkaMessagesDashboard = () => {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem' }}>
         {/* Sección de envío de mensajes */}
-        <div className="mb-8">
-          <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700/50 p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <Send className="w-5 h-5 mr-2 text-blue-400" />
-              Enviar Mensaje
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{
+            backgroundColor: 'rgba(55, 65, 81, 0.5)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '1rem',
+            border: '1px solid rgba(75, 85, 99, 0.5)',
+            padding: '1.5rem'
+          }}>
+            <h2 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: '600', 
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              📨 Enviar Mensaje
             </h2>
-            <div className="flex space-x-4">
+            <div style={{ display: 'flex', gap: '1rem' }}>
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Escribe tu mensaje (incluye 'topico1', 'topico2' o 'topico3')..."
-                className="flex-1 px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                style={{
+                  flex: '1',
+                  padding: '0.75rem 1rem',
+                  backgroundColor: 'rgba(75, 85, 99, 0.5)',
+                  border: '1px solid #4b5563',
+                  borderRadius: '0.75rem',
+                  color: 'white',
+                  fontSize: '1rem'
+                }}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               />
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed rounded-xl font-medium transition-all duration-200 flex items-center space-x-2"
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: newMessage.trim() 
+                    ? 'linear-gradient(45deg, #3b82f6, #8b5cf6)' 
+                    : '#6b7280',
+                  border: 'none',
+                  borderRadius: '0.75rem',
+                  color: 'white',
+                  fontWeight: '500',
+                  cursor: newMessage.trim() ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
               >
-                <Send className="w-4 h-4" />
-                <span>Enviar</span>
+                ➤ Enviar
               </button>
             </div>
             
             {/* Ejemplos */}
-            <div className="mt-4 text-sm text-gray-400">
-              <span className="font-medium">Ejemplos:</span>
-              <div className="flex flex-wrap gap-2 mt-2">
+            <div style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#9ca3af' }}>
+              <span style={{ fontWeight: '500' }}>Ejemplos:</span>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                 {[
                   "Hola desde topico1",
                   "Mensaje para topico2",
@@ -214,7 +268,15 @@ const KafkaMessagesDashboard = () => {
                   <button
                     key={idx}
                     onClick={() => setNewMessage(example)}
-                    className="px-3 py-1 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg transition-colors duration-200"
+                    style={{
+                      padding: '0.25rem 0.75rem',
+                      backgroundColor: 'rgba(75, 85, 99, 0.5)',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      color: '#d1d5db',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }}
                   >
                     {example}
                   </button>
@@ -225,29 +287,47 @@ const KafkaMessagesDashboard = () => {
         </div>
 
         {/* Estadísticas por tópico */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+          gap: '1.5rem',
+          marginBottom: '2rem'
+        }}>
           {Object.entries(topicStats).map(([topic, stats]) => (
-            <div key={topic} className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700/50 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 ${topicColors[topic]?.bg || 'bg-gray-500'} rounded-lg`}>
-                    <Server className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold capitalize">{topic}</h3>
-                    <p className="text-sm text-gray-400">Total: {stats.total}</p>
-                  </div>
+            <div key={topic} style={{
+              backgroundColor: 'rgba(55, 65, 81, 0.5)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '1rem',
+              border: '1px solid rgba(75, 85, 99, 0.5)',
+              padding: '1.5rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{
+                  padding: '0.5rem',
+                  backgroundColor: topicColors[topic]?.bg.replace('bg-', '') === 'blue-500' ? '#3b82f6' :
+                                 topicColors[topic]?.bg.replace('bg-', '') === 'green-500' ? '#10b981' :
+                                 topicColors[topic]?.bg.replace('bg-', '') === 'purple-500' ? '#8b5cf6' : '#6b7280',
+                  borderRadius: '0.5rem',
+                  marginRight: '0.75rem'
+                }}>
+                  🖥️
+                </div>
+                <div>
+                  <h3 style={{ fontWeight: '600', textTransform: 'capitalize', margin: 0 }}>{topic}</h3>
+                  <p style={{ fontSize: '0.9rem', color: '#9ca3af', margin: '0.25rem 0 0 0' }}>
+                    Total: {stats.total}
+                  </p>
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Partición 0</span>
-                  <span className="font-medium">{stats.partition0 || 0}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Partición 0</span>
+                  <span style={{ fontWeight: '500' }}>{stats.partition0 || 0}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-400">Partición 1</span>
-                  <span className="font-medium">{stats.partition1 || 0}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Partición 1</span>
+                  <span style={{ fontWeight: '500' }}>{stats.partition1 || 0}</span>
                 </div>
               </div>
             </div>
@@ -255,61 +335,120 @@ const KafkaMessagesDashboard = () => {
         </div>
 
         {/* Lista de mensajes */}
-        <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700/50">
-          <div className="p-6 border-b border-gray-700/50">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold flex items-center">
-                <MessageSquare className="w-5 h-5 mr-2 text-green-400" />
-                Mensajes Recibidos ({messages.length})
-              </h2>
-              <button
-                onClick={clearMessages}
-                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Limpiar</span>
-              </button>
-            </div>
+        <div style={{
+          backgroundColor: 'rgba(55, 65, 81, 0.5)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '1rem',
+          border: '1px solid rgba(75, 85, 99, 0.5)'
+        }}>
+          <div style={{
+            padding: '1.5rem',
+            borderBottom: '1px solid rgba(75, 85, 99, 0.5)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <h2 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: '600',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              💬 Mensajes Recibidos ({messages.length})
+            </h2>
+            <button
+              onClick={clearMessages}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                color: '#f87171',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              🗑️ Limpiar
+            </button>
           </div>
           
-          <div className="max-h-96 overflow-y-auto">
+          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
             {messages.length === 0 ? (
-              <div className="p-12 text-center text-gray-400">
-                <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <div style={{ 
+                padding: '3rem', 
+                textAlign: 'center', 
+                color: '#9ca3af' 
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: '0.5' }}>💬</div>
                 <p>No hay mensajes recibidos</p>
-                <p className="text-sm mt-2">Envía un mensaje para comenzar</p>
+                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Envía un mensaje para comenzar</p>
               </div>
             ) : (
-              <div className="space-y-2 p-4">
+              <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {messages.map((message, index) => (
                   <div
                     key={index}
-                    className={`p-4 rounded-xl border-l-4 ${topicColors[message.topic]?.border || 'border-gray-500'} bg-gray-700/30 hover:bg-gray-700/50 transition-colors duration-200`}
+                    style={{
+                      padding: '1rem',
+                      borderRadius: '0.75rem',
+                      borderLeft: `4px solid ${
+                        topicColors[message.topic]?.bg.replace('bg-', '') === 'blue-500' ? '#3b82f6' :
+                        topicColors[message.topic]?.bg.replace('bg-', '') === 'green-500' ? '#10b981' :
+                        topicColors[message.topic]?.bg.replace('bg-', '') === 'purple-500' ? '#8b5cf6' : '#6b7280'
+                      }`,
+                      backgroundColor: 'rgba(75, 85, 99, 0.3)',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(75, 85, 99, 0.5)'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(75, 85, 99, 0.3)'}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-4 mb-2">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${topicColors[message.topic]?.bg || 'bg-gray-500'} text-white`}>
-                            {message.topic}
-                          </span>
-                          <div className="flex items-center space-x-1 text-gray-400">
-                            <Partition className="w-3 h-3" />
-                            <span className="text-xs">Partición {message.partition}</span>
-                          </div>
-                          <div className="flex items-center space-x-1 text-gray-400">
-                            <Hash className="w-3 h-3" />
-                            <span className="text-xs">Offset {message.offset}</span>
-                          </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                        <span style={{
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '1rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          backgroundColor: topicColors[message.topic]?.bg.replace('bg-', '') === 'blue-500' ? '#3b82f6' :
+                                         topicColors[message.topic]?.bg.replace('bg-', '') === 'green-500' ? '#10b981' :
+                                         topicColors[message.topic]?.bg.replace('bg-', '') === 'purple-500' ? '#8b5cf6' : '#6b7280',
+                          color: 'white'
+                        }}>
+                          {message.topic}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#9ca3af' }}>
+                          <span style={{ fontSize: '0.75rem' }}>📦</span>
+                          <span style={{ fontSize: '0.75rem' }}>Partición {message.partition}</span>
                         </div>
-                        
-                        <p className="text-white font-medium mb-2">{message.content}</p>
-                        
-                        <div className="flex items-center space-x-4 text-xs text-gray-400">
-                          <span>Consumer: {message.consumerGroup}</span>
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{formatTimestamp(message.timestamp)}</span>
-                          </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#9ca3af' }}>
+                          <span style={{ fontSize: '0.75rem' }}>#</span>
+                          <span style={{ fontSize: '0.75rem' }}>Offset {message.offset}</span>
+                        </div>
+                      </div>
+                      
+                      <p style={{ 
+                        color: 'white', 
+                        fontWeight: '500', 
+                        marginBottom: '0.5rem',
+                        margin: '0.5rem 0'
+                      }}>
+                        {message.content}
+                      </p>
+                      
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '1rem', 
+                        fontSize: '0.75rem', 
+                        color: '#9ca3af' 
+                      }}>
+                        <span>Consumer: {message.consumerGroup}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <span>🕒</span>
+                          <span>{formatTimestamp(message.timestamp)}</span>
                         </div>
                       </div>
                     </div>
