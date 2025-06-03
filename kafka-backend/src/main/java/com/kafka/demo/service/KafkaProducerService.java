@@ -1,4 +1,4 @@
-package main.java.com.kafka.demo.service;
+package com.kafka.demo.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package main.java.com.kafka.demo.config;
+package com.kafka.demo.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

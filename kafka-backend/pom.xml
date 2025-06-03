@@ -13,9 +13,9 @@
     </parent>
     
     <groupId>com.kafka</groupId>
-    <artifactId>kafka-demo</artifactId>
+    <artifactId>kafka-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>kafka-demo</name>
+    <name>kafka-backend</name>
     <description>Sistema de mensajería con Kafka, Spring Boot y React</description>
     
     <properties>
